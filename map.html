@@ -1,0 +1,758 @@
+<html xmlns="https://www.w3.org/1999/xhtml"><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>VetRelief - Web Map</title>
+    
+    <link href="https://testm.vetrelief.com/tmpl/css/Master.css" rel="stylesheet" type="text/css">
+    
+    <link rel="stylesheet" type="text/css" href="https://testm.vetrelief.com/tmpl/slick-1.8.1/slick/slick.css">
+    <link rel="stylesheet" type="text/css" href="https://testm.vetrelief.com/tmpl/slick-1.8.1/slick/slick-theme.css">
+    <script src="https://testm.vetrelief.com/tmpl/SpryAssets/SpryMenuBar.js" type="text/javascript"></script>
+    <script src="https://testm.vetrelief.com/tmpl/Scripts/responsive-menu.js" type="text/javascript"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    
+    <script type="text/javascript">
+    
+    $(document).ready(function() {
+        // Identify browsers with zero CORS support (old IE) and redirect them right away - to the correct page.
+    
+        var authurl = "https://testm.vetrelief.com/";
+    
+        // Identify browsers with zero CORS support (old IE) and redirect them right away - to the correct page.
+        if(!('withCredentials' in new XMLHttpRequest())) {
+            if(window.location != authurl) {	window.location.replace(authurl);	}
+        }
+        
+        $('a.login-window').click(function() { return showLoginBox() });
+        
+        // When clicking on the button close or the mask layer the popup closed
+        $('a.close, #mask').live('click', function() { return hideLoginBox() } );
+    });
+    
+    function showLoginBox() {
+        // Getting the variable's value from a link 
+        var loginBox = "#login-box";
+    
+        //Fade in the Popup and add close button
+        $(loginBox).fadeIn(300);
+        
+        //Set the center alignment padding + border
+        var popMargTop = ($(loginBox).height() + 24) / 2; 
+        var popMargLeft = ($(loginBox).width() + 24) / 2; 
+        
+        $(loginBox).css({ 
+            'margin-top' : -popMargTop,
+            'margin-left' : -popMargLeft
+        });
+        
+        // Add the mask to body
+        $('body').append('<div id="mask"></div>');
+        $('#mask').fadeIn(300);
+        
+        return false;	
+    }
+    
+    function hideLoginBox() {
+        $('#mask , .login-popup').fadeOut(300 , function() {
+            $('#mask').remove();  
+        }); 
+        return false;
+    }
+    
+    // this is used to prevent the login 'go' button from submitting the form directly
+    function testXMLAuth1() {
+        return false;
+    }
+    
+    // this queries the server with the login info, and handles updating the UI or redirecting to the login area.
+    function testXMLAuth() {
+        
+        // Determine if the Browser supports CORS or not. This is mostly for the benefit of obsolete Inernet Explorer versions so many people use still.
+        var xmlhttp;
+    
+        // Do the Thing.
+        var url = "https://testm.vetrelief.com/login.ajax.phtml";
+    
+        // obtain the username and password entered into the Form.
+        var ln = document.getElementById("login").elements.namedItem("VET_AUTH_USER").value;
+        var pw = document.getElementById("login").elements.namedItem("VET_AUTH_PW").value;
+        
+        // copy the CLEAN status from the form.
+        var clean = document.getElementById("login").elements.namedItem("LOGIN_FORM").value;
+        
+        var payload = "LOGIN_FORM=" + clean + "&VET_AUTH_USER=" + ln + "&VET_AUTH_PW=" + pw;
+    
+        // begin determining browser specifics
+        if('withCredentials' in new XMLHttpRequest()) {
+            // full support for normal CORS behavior
+            xmlhttp = new XMLHttpRequest();	
+            
+            // NOTE THIS REGISTERS A HOOK
+            xmlhttp.onreadystatechange=function() {
+                if(xmlhttp.readyState==4 && xmlhttp.status==200) {
+                    if(xmlhttp.responseText=="TRUE") {
+                        // submit the true form.
+                        document.getElementById("login").submit();
+                    } else {
+                        // display the returned error
+                        document.getElementById("errorText").innerHTML=xmlhttp.responseText;
+                    }
+                }
+            }
+          
+                
+        } else {		
+            if(typeof XDomainRequest !== "undefined") {
+                // IE Specific CORS support
+                xmlhttp = new XDomainRequest();
+                // this is the mode detected by IE8
+            } else {
+                // early IE
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            
+            function onload_ie() {
+                if(xmlhttp.responseText=="TRUE") {
+                    // submit the true form.
+                    document.getElementById("login").submit();
+                } else {
+                    // display the returned error
+                    document.getElementById("errorText").innerHTML=xmlhttp.responseText;
+                }	
+            }
+            
+            xmlhttp.onload=onload_ie;
+            xmlhttp.onprogress=onload_ie;
+            xmlhttp.onerror=function () { document.getElementById("errorText").innerHTML="err"; }
+            xmlhttp.ontimeout=function () { document.getElementById("errorText").innerHTML="timeout"; }
+        }
+    
+        xmlhttp.open("POST",url,true);
+    
+        // IE doesn't want this either.
+        if('withCredentials' in new XMLHttpRequest()) {
+            // send the data
+            xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xmlhttp.setRequestHeader("Content-length", payload.length);
+            xmlhttp.setRequestHeader("Connection", "close");
+        }
+    
+        xmlhttp.send(payload);
+        // we're done requesting data from the server - the state change hook above will catch the response.
+    
+        // blank the error text to make the retry more apparent.
+        document.getElementById("errorText").innerHTML="Please Wait ...";
+    } // end testXMLAuth()
+    
+    
+    
+    </script>
+    <style>
+    
+    .txt{
+        color: red;
+    }
+    
+    </style>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js"></script>
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css" rel="stylesheet">
+    
+    <!-- CSS only Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+    
+    <script src="https://npmcdn.com/csv2geojson@latest/csv2geojson.js"></script>
+      <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo&amp;display=swap" rel="stylesheet">
+    <style type="text/css">
+        #map {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 100%;
+                }
+             .mapboxgl-popup {
+              padding-bottom: 5px;
+    
+            }
+    
+            .mapboxgl-popup-content {
+              font-family: 'Nanum Myeongjo', serif;
+              padding: 0;
+              width: auto;
+              border:2px solid #00853e;
+              background-color: #ffffff;
+            }
+            .mapboxgl-popup-content-wrapper {
+              padding: 10%;
+            }
+    
+            .mapboxgl-popup-content h1 {
+    
+            text-align: center;
+            color: rgb(54, 54, 54);
+            margin: 0;
+            display: block;
+            font-size:108%;
+            font-weight: 600;
+            padding: 0% 0 1% 0;
+            text-decoration: underline;
+            top: 0;
+    
+            }
+    
+            .mapboxgl-popup-content h2 {
+              background-color: #bbbbbb6d;
+              text-align: left;
+              color: #000000;
+              margin: 0;
+              display: block;
+              width: auto;
+              padding:2% 2% 2% 2%;
+              font-size:94%;
+              font-weight: 580;
+            }
+    
+    
+    
+    
+            .mapboxgl-popup-content h3 {
+              text-align: center;
+              color: rgb(49, 48, 48);
+              margin: 0;
+              display: block;
+              padding: 1% 0% 1% 0%;
+              font-size:112%;
+              font-weight: 600;
+      
+    
+    
+            }
+    
+            .mapboxgl-popup-content h4 {
+      
+              text-align: center;
+              color: rgb(47, 47, 47);
+              margin: 0;
+              display: block;
+              padding: 0% 2% 0% 2%;
+              font-size:105%;
+              font-weight: 600;
+     
+      
+    
+            }
+    
+    
+    
+            .desc {
+              background-color: #bbbbbb39;
+              text-align: left;
+              color: #000000;
+              margin: 0;
+              display: block;
+              width: auto;
+              height: auto;
+              padding:1% 1% 2% 1%;
+              font-size:100%;
+              font-weight: 200;
+              overflow: hidden;
+            }
+    
+            .cilidio  {
+            display: block;
+            width: auto;
+            height: auto;
+            background-color: #d5d5d51c;
+    
+    
+            }
+    
+            .desnidio {
+              position: relative;
+              display: block;
+              width: 35%;
+              height: 75px;
+              float: right;
+              font-weight: 200; 
+              padding:1% 1% 0% 0;
+              text-align: right;
+     
+    
+            }
+    
+            .doli {
+                display:inline-block;
+                padding:0 20% 0 0;
+                text-align: center;
+                height: auto;
+                width: auto; 
+                font-size: 9px;
+                font-weight: 590;
+       
+            }
+    
+    
+            .lividio {
+            position: relative;
+            height: 75px;
+            width: 65%;
+            float: left;
+            display: block;
+            text-align:center;
+            padding:4% 0 2% 0%;
+            }
+    
+    
+            .mapboxgl-popup-content h6 {
+      
+              font-size:85%;
+              color:aliceblue;
+              font-weight: 600;
+              text-align:center;
+              margin: 0;
+              padding: 2% 0% 2% 0%;
+     
+            }
+    
+    
+            .mapboxgl-container {
+              cursor: pointer;
+            }
+    
+            .mapboxgl-popup-anchor-top>.mapboxgl-popup-content {
+              margin-top: 3px;
+            }
+    
+            .mapboxgl-popup-anchor-top>.mapboxgl-popup-tip {
+              border-bottom-color: rgb(61, 59, 59);
+            }
+    
+            .mapboxgl-popup-anchor-bottom>.mapboxgl-popup-tip {
+              border-bottom-color: rgb(61, 59, 59);
+            }
+    
+            .mapboxgl-popup-close-button {
+            color:#000000;
+    
+            }
+    
+            .mapboxgl-popup-close-button:hover {
+            background-color:#0bb4ec71;
+    
+            }
+            #fly {
+                display: inline-block;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                margin: 0px auto;
+                padding: 6px 10px;
+                border-radius: 5px;
+                font-size: 12px;
+                text-align: center;
+                background: #fffffc;
+                cursor: pointer;
+                border: 2px solid #4f7651;
+                z-index: 55;
+            }
+            .map-theme-menu{
+                position: fixed;
+                max-width: 150px !important;
+                right: 0;
+                bottom: 0;
+                background-color: #fff !important;
+                bottom: 10px;
+                right: 10px;
+                display: flex;
+                align-items: center;
+                border-radius: 5px;
+                border:1px solid silver !important;
+            }
+            .map-theme-group{
+                width: 100%;
+                display: flex;
+                align-items: center;
+                padding: 5px;
+            }
+            .map-theme-group label{
+                margin-left: 5px;
+            }
+
+    
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+    </head>
+    
+    <body class="GenLayout" data-new-gr-c-s-check-loaded="14.1091.0" data-gr-ext-installed="">
+            <div id="container">
+    <div id="mainContent">
+        <div id="map" class="mapboxgl-map">
+            <div class="mapboxgl-canary" style="visibility: hidden;"></div>
+            <div class="mapboxgl-canvas-container mapboxgl-interactive mapboxgl-touch-drag-pan mapboxgl-touch-zoom-rotate">
+                <canvas class="mapboxgl-canvas" tabindex="0" aria-label="Map" role="region" width="1170" height="2532" style="width: 390px; height: 844px;"></canvas>
+            </div>
+            <div class="mapboxgl-control-container">
+                <div class="mapboxgl-ctrl-top-left">
+                    <div class="mapboxgl-ctrl mapboxgl-ctrl-group">
+                        <button class="mapboxgl-ctrl-zoom-in" type="button" title="Zoom in" aria-label="Zoom in" aria-disabled="false">
+                            <span class="mapboxgl-ctrl-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="mapboxgl-ctrl-zoom-out" type="button" title="Zoom out" aria-label="Zoom out" aria-disabled="false">
+                            <span class="mapboxgl-ctrl-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="mapboxgl-ctrl-compass" type="button" title="Reset bearing to north" aria-label="Reset bearing to north">
+                            <span class="mapboxgl-ctrl-icon" aria-hidden="true" style="transform: rotate(0deg);"></span>
+                        </button>
+                    </div>
+                </div>
+            <div class="mapboxgl-ctrl-top-right"></div>
+                <div class="mapboxgl-ctrl-bottom-left">
+                    <div class="mapboxgl-ctrl" style="display: block;">
+                        <a class="mapboxgl-ctrl-logo" target="_blank" rel="noopener nofollow" href="https://www.mapbox.com/" aria-label="Mapbox logo"></a>
+                    </div>
+                </div>
+                <div class="mapboxgl-ctrl-bottom-right"></div>
+            </div>
+        </div>
+        
+        <button id="fly">Reset View</button>
+        
+        <div id="menu" class="map-theme-menu">
+            <div class="map-theme-group">
+                <input id="cktc5285n01i617n776r8cr3k" type="radio" name="rtoggle" value="light" checked="checked">
+                <label for="cktc5285n01i617n776r8cr3k">Light</label>
+            </div>
+            <div class="map-theme-group">
+                <input id="cktls5l3g13e018qr1qm2astp" type="radio" name="rtoggle" value="dark">
+                <label for="cktls5l3g13e018qr1qm2astp">Dark</label>
+            </div>
+            
+        </div>
+    </div>					
+    
+      
+                <!-- end #container --></div>
+    <script type="text/javascript">
+    <!--
+    var MenuBar1 = new Spry.Widget.MenuBar("MenuBar1", {imgDown:"https://testm.vetrelief.com/tmpl/SpryAssets/SpryMenuBarDownHover.gif", imgRight:"https://testm.vetrelief.com/tmpl/SpryAssets/SpryMenuBarRightHover.gif"});
+    //-->
+            </script>
+    
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script><script src="https://ssl.google-analytics.com/ga.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var pageTracker = _gat._getTracker("UA-3941141-1");
+    pageTracker._initData();
+    pageTracker._trackPageview();
+    </script><script>
+    var transformRequest = (url, resourceType) => {
+          var isMapboxRequest =
+            url.slice(8, 22) === "api.mapbox.com" ||
+            url.slice(10, 26) === "tiles.mapbox.com";
+          return {
+            url: isMapboxRequest
+              ? url.replace("?", "?pluginName=sheetMapper&")
+              : url
+          };
+        };
+    
+    
+    
+    
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWl0Y2h3ZWJtYXAiLCJhIjoiY2t0N3VpMWNjMHZ0bDJ1bGFieDE5ZHAyMCJ9.1UAES7m7GRTbNjEgNV53Zw';
+        var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mitchwebmap/cktc5285n01i617n776r8cr3k', 
+        center: [ -115.29229350124075, 35.10833326752292],
+        attributionControl: false,
+        maxZoom: 18,
+        minZoom: 2,
+        zoom: 5,
+        pitch:30,
+        transformRequest: transformRequest
+        });
+    
+        //change basemaps
+    
+        var layerList = document.getElementById('menu');
+        var inputs = layerList.getElementsByTagName('input');
+        
+    
+        var nav = new mapboxgl.NavigationControl();
+            map.addControl(nav, 'top-left');
+    
+    // Holds visible features 
+    var locations = [];
+    
+     
+     
+    // Create a popup, but don't add it to the map yet.
+    var popup = new mapboxgl.Popup({
+    closeButton: true
+    });
+    
+                    
+                        window.onload = function () {
+                        $.ajax({
+                            type: "GET",
+                            url:'https://docs.google.com/spreadsheets/d/1qAoV3bGQDYkhS9fZCC-NjEqCWmcWd0yqnohDvlRnQpQ/gviz/tq?tqx=out:csv&sheet=Web_map',
+                            dataType: "text",
+                            async: false,
+                            success: function (csvData) {makeGeoJSON(csvData); }
+                              });
+    
+                              
+    
+                              
+                              
+                              //csv2geojson function
+    
+                              function makeGeoJSON(csvData) {
+                                csv2geojson.csv2geojson(csvData, {
+                                latfield: 'Latitude',
+                                lonfield: 'Longitude',
+                                delimiter: ','
+                                }, function (err, data) {  
+                                    
+                                 map.on('load', () => {
+    
+         
+                                    console.log(data)
+                                    
+                                
+                                    map.addSource("locations", {
+                                        type: "geojson",
+                                        data: data,
+                                        
+                                        
+                                    });
+                                                                    
+                                    map.addLayer({
+                                    'id': 'location',
+                                    'type': 'symbol',
+                                    'source':'locations',
+                                    'layout': { 
+                                    'icon-allow-overlap': true,
+                                    'icon-image': 'paws',
+                                       
+                                    }	
+    
+                             });
+    
+    
+                              // sky 
+    
+                              map.addLayer({
+                                'id': 'sky',
+                                'type': 'sky',
+                                'paint': {
+                                'sky-opacity': [
+                                'interpolate',
+                                ['linear'],
+    
+    
+                                ['zoom'],
+                                        0,
+                                        0,
+                                        5,
+                                        0.3,
+                                        8,
+                                        1
+                                        ],
+                                
+                                'sky-type': 'atmosphere',
+                                'sky-atmosphere-sun-intensity': 5
+                                }
+                                });
+                                    
+                                    map.on('style.load', function(e) {
+                                        
+                                        map.addSource("locations", {
+                                        type: "geojson",
+                                        data: data,
+                                        
+                                    });
+                                    map.addLayer( {
+                                    'id': 'location',
+                                    'type': 'symbol',
+                                    'source':'locations',
+                                    'layout': { 
+                                    'icon-allow-overlap': true,
+                                    'icon-image': 'paws',
+                                       
+                                    }
+                                                    
+                                          });
+    
+    
+    
+                                           // sky 
+    
+                                        map.addLayer({
+                                            'id': 'sky',
+                                            'type': 'sky',
+                                            'paint': {
+                                            'sky-opacity': [
+                                            'interpolate',
+                                            ['linear'],
+    
+    
+                                            ['zoom'],
+                                                    0,
+                                                    0,
+                                                    5,
+                                                    0.3,
+                                                    8,
+                                                    1
+                                                    ],
+                                            
+                                            'sky-type': 'atmosphere',
+                                            'sky-atmosphere-sun-intensity': 5
+                                            }
+                                            });
+                    
+                                        });
+    
+    
+            
+    
+    
+    
+                map.on('mouseenter', 'location', function () {
+                map.getCanvas().style.cursor = 'pointer';
+                  });
+     
+                map.on('click', 'location', function (e) {
+                // Change the cursor style as a UI indicator.
+                map.getCanvas().style.cursor = 'pointer';
+     
+                // Populate the popup and set its coordinates based on the feature. &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp; 
+                    var feature = e.features[0];
+                    popup.setLngLat(feature.geometry.coordinates).setHTML('<div class="logo-image">' + '<h2>' +   feature.properties.Service  +  '</h2>'  + 
+                                        
+                    
+                                '<div class="cilidio">' + 
+    
+                                '<div class="lividio">' + '<h3>'  + feature.properties.First_Name + ' & ' + feature.properties.Pets_name + '</h3>' + 
+                                '<h4>'  + feature.properties.Age + ' Old' +  '</h4>' +
+                                '<h3>' + feature.properties.City +  ', '  + feature.properties.State  + '</h3>' + '</div>' + 
+                                
+                                '<div class="desnidio">' + '<img class="image2" src="' + feature.properties.Picture_Animal +'" align="right">' + '<img class = "img" src="' + feature.properties.Picture_Human +'" align="right" >' +  '<div class="doli">' +   '&nbsp &nbsp &nbsp; Job ID: ' + feature.properties.Job_ID  + '</div>' +
+                                
+                               
+                                
+                                '</div>' +	
+                                
+                                
+                                '<div class="desc">' +  '<h1>' + feature.properties.Category + '</h1>' 
+                                                                  + feature.properties.Description + 
+                                                                  '</div>' + 
+    
+                                        '<h6>' +  '<a  href="' + feature.properties.Pictures_URL + '"  target="_blank">'  + '<button " class="button">View Pictures</button> ' + '<a/>' + '&nbsp&nbsp&nbsp&nbsp;&nbsp;' +   '<a  href="' + feature.properties.Place_Bid + '"  target="_blank">'  + '<button " class="button">Place Bid</button> ' + '<a/>' + '</h6>' + 
+                                        
+                                        '</div>')
+                                            .addTo(map);
+    
+                                        
+                                            });
+    
+                    map.on('mouseleave', 'location', function () {
+                    map.getCanvas().style.cursor = '';
+                    });
+    
+                  
+    
+    
+                 
+                   
+                        
+     //fly to feature
+                                
+    
+     
+    });
+    });
+    
+    };
+    
+    
+    $(".more").toggle(function(){
+        $(this).text("less..").siblings(".complete").show();    
+    }, function(){
+        $(this).text("more..").siblings(".complete").hide();    
+    });
+    
+    
+    
+    
+    function switchLayer(layer) {
+        var layerId = layer.target.id;
+        map.setStyle('mapbox://styles/mitchwebmap/' + layerId);
+        }
+        
+        for (var i = 0; i < inputs.length; i++) {
+        inputs[i].onclick = switchLayer;
+        }
+    
+    
+        document.getElementById('fly').addEventListener('click', function () {
+    
+    
+            var popUps = document.getElementsByClassName('mapboxgl-popup');
+            if (popUps[0]) {popUps[0].remove()};     
+            
+            
+            var activeItem = document.getElementsByClassName('active');
+               if (activeItem[0]) {
+                 activeItem[0].classList.remove('active');
+               }
+               this.parentNode.classList.add('active');
+        
+              
+         
+             map.flyTo({
+                center: [ -115.29229350124075, 35.10833326752292],
+                zoom: 5,
+                bearing:0,
+                pitch:30,
+         });
+        });
+    
+    };
+    
+    
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script type="text/javascript" src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="https://testm.vetrelief.com/tmpl/slick-1.8.1/slick/slick.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        if ($('.ad-carousel').length > 0) {
+            $('.ad-carousel').slick({
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                autoplay: true,
+                autoplaySpeed: 2000
+            });
+        }
+        $('select[id^="adid-"').on('change', function() {
+            var edit_url = '?page=featuredads&sub=edit&adid=';
+            var adid = $(this).attr('id').split('-');
+            window.location = '/admin/' + edit_url + adid[1];
+        });
+    });
+    </script>
+    </body>
+    </html>
