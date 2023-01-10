@@ -1450,7 +1450,9 @@ section {
     margin: -1.5rem -1.5rem 1rem;
     padding: 0.5rem 1.5rem;
 }
-
+.pet-prifile-header.pending-payment{
+    background-color: #f16370;
+}
 
 .pet-profile-card .dog-profile{
     width: 100%;
